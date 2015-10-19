@@ -1,5 +1,5 @@
 # weather station
-#sensor team 1
+##sensor team 1
 This is repo for our project in cs404 course
 Group Members:
 Manoj Kumar B13208
