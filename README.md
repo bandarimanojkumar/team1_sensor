@@ -10,5 +10,5 @@ Sadwith Gogula B13210
 
 Nitin Krishna  B13125
 
-link for our  google project group:
+link to our  google project folder:
 https://drive.google.com/folderview?id=0Bz_Cmob-MlrKYVE2MHB2cFplcVE&usp=sharing
