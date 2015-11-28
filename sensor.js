@@ -36,14 +36,6 @@ var util          = require('util');
 var fs            = require('fs');
 var b             = require('bonescript');
 
-var port  = '/dev/i2c-2';		// Using MPL3115 Altitude sensor
-var mpl = 0x60;
-var ms = 1*10*1000;           // Repeat time
-
-// console.log(util.inspect(request));
-// request.debug = true;
-
-// var filename = "/home/yoder/exercises/phant/keys_many.json";
 var filename = "/root/keys_many.json";
 // logger.debug("process.argv.length: " + process.argv.length);
 if(process.argv.length === 3) {
@@ -57,32 +49,45 @@ logger.info("Title: " + keys.title);
 
 var urlBase = keys.inputUrl + "?private_key=" + keys.privateKey + "&altitude=%s&humidity=%s&hydrogen=%s&methane=%s&temp=%s";
 //console.log("url"+urlBase);
-b.i2cOpen(port, mpl);
-b.i2cWriteBytes(port, 0x26, [0xb8]); // Set to Altimeter with an OSR = 128 
-b.i2cWriteBytes(port, 0x13, [0x07]); // Enable Data Flags in PT_DATA_CFG
-b.i2cWriteBytes(port, 0x26, [0xb9]); // Set Active (polling)
+var ch4;
+var h;
 
-setInterval(readWeather, ms);
 
-setTimeout(readWeather, 500);   // Give the sensor time to get started
+setInterval(readCH4Data, 1000);
+setInterval(readHData, 1000);
 
-function readWeather() {
-    // i2cReadBytes(port, command, length, [callback])
-	b.i2cReadBytes(port, 0x00, 6, postWeather);
+function readCH4Data(){
+ b.analogRead('P9_36', printCH4Status);
 }
 
-function postWeather(data) {
-    // logger.debug("data: " + util.inspect(data));
-    var mplData;
-    if(data.event === 'return') {
-        mplData = {
-            altitude:   data.return[1]<<8 | data.return[2],     // Units:  meters
-            temp:       (((data.return[4]<<8 | data.return[5])<<16)>>16)/256    // Units: degree C
-        };
-        console.log("mplData: " + util.inspect(mplData));
+function printCH4Status(x) {
+    console.log('raw_CH4_value = ' + x.value.toFixed(4));    //Print the raw CO value; needs calibration
+     ch4 = x.value.toFixed(4) ;
+    if (x.err) console.log('x.err = ' + x.err);
+    if (h){
+    postData();
+    }
+}
 
-    //  &altitude=%s&co=%s&humidity=%s&pressure=%s&soil=%s&temp=%s
-        var url = util.format(urlBase, mplData.altitude, 0,0,0,mplData.temp);
+
+function readHData(){
+ b.analogRead('P9_38', printHStatus);
+}
+
+function printHStatus(x) {
+    console.log('raw_H_value = ' + x.value.toFixed(4));    //Print the raw CO value; needs calibration
+     h = x.value.toFixed(4) ;
+    if (x.err) console.log('x.err = ' + x.err);
+    if (ch4){
+    postData();
+    }
+}
+
+
+function postData() {
+    // logger.debug("data: " + util.inspect(data));
+    
+        var url = util.format(urlBase, 0,0,h,ch4,0);
         //logger.debug("url: ", url);
        // logger.info(url);
        request(url, {timeout: 10000}, function (error, response, body) {
@@ -91,7 +96,7 @@ function postWeather(data) {
             } else {
                 logger.error("error=" + error + " response=" + JSON.stringify(response));
             }
-        })
+       })
         
-    }
+    
 }
